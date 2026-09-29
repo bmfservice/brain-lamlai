@@ -1,0 +1,27 @@
+[Unit]
+Description=BILL vLLM chat server (Gemma, GPU from .env)
+Documentation=file:///mnt/d/AI/braind/docs/operations.md
+# Start after the embedding server, per docs/operations.md: it claims the
+# smaller share of VRAM first. Both servers are pinned to different cards via
+# CUDA_VISIBLE_DEVICES from .env, so this is startup ordering rather than a
+# hard VRAM dependency.
+After=braind-vllm-embed.service
+Wants=braind-vllm-embed.service
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/d/AI/braind
+ExecStart=/mnt/d/AI/braind/start_vllm.sh chat
+
+TimeoutStartSec=900
+TimeoutStopSec=30
+
+Restart=on-failure
+RestartSec=5
+
+# Reap the whole cgroup on stop: vLLM forks EngineCore/worker subprocesses that
+# would otherwise survive and keep holding VRAM, breaking the next start.
+KillMode=control-group
+
+[Install]
+WantedBy=braind-vllm.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=BILL vLLM servers (chat + embedding)
+Documentation=file:///mnt/d/AI/braind/docs/operations.md
+# One handle for the pair: `systemctl --user start|stop braind-vllm.target`.
+# The member services are pulled in through their own
+# [Install] WantedBy=braind-vllm.target symlinks (created by `enable`), so this
+# target deliberately lists no Wants= of its own — duplicating them here would
+# make `disable` of a single server silently ineffective.
+
+[Install]
+WantedBy=default.target

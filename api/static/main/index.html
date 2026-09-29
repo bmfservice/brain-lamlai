@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Robinson • AI Command Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <link rel="stylesheet" href="/static/main/css/robinson.css"/>
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+  <!-- Top Navigation -->
+  <nav class="border-b border-zinc-800 bg-zinc-950/95 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+          <i class="fa-solid fa-brain text-white text-xl"></i>
+        </div>
+        <div>
+          <div class="font-display text-xl tracking-tight">Braind</div>
+          <div class="text-[10px] text-zinc-500 -mt-1">Trí tuệ thứ hai</div>
+        </div>
+      </div>
+
+      <div id="nav-buttons" class="flex items-center gap-1 text-sm">
+        <!-- Dynamic nav items rendered from /api/ui/nav -->
+        <button id="nav-chat" class="nav-active px-5 py-2 rounded-xl flex items-center gap-2 transition-all">
+          <i class="fa-solid fa-comments"></i><span>Chat</span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-3 text-xs">
+        <div id="status-pill" class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center gap-2">
+          <i class="fa-solid fa-circle text-[8px]"></i>
+          <span>Online</span>
+        </div>
+        <button onclick="showStats()" class="px-3 py-1.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 text-xs">
+          <i class="fa-solid fa-chart-bar mr-1.5"></i>Thống kê
+        </button>
+        <button onclick="openCommandPalette()" class="px-3 py-1.5 rounded-xl border border-zinc-800 hover:bg-zinc-900 text-xs flex items-center gap-2" title="Command palette (Ctrl+K)">
+          <i class="fa-solid fa-terminal"></i><kbd class="font-mono text-[10px] text-zinc-500">Ctrl+K</kbd>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-6 py-8">
+
+    <!-- CHAT VIEW -->
+    <div id="view-chat" class="view">
+      <div class="max-w-4xl mx-auto">
+        <div class="mb-6">
+          <div class="text-3xl font-display tracking-tight">Trò chuyện với Braind</div>
+          <div class="text-zinc-400 mt-1">Hỏi bất cứ điều gì — Braind sẽ tìm trong kho kiến thức và trả lời.</div>
+        </div>
+
+        <div class="flex items-center justify-between mb-3 gap-3">
+          <div id="chat-conv-label" class="text-[11px] text-zinc-500 truncate">Cuộc trò chuyện mới</div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="loadConversations()" title="Lịch sử"
+                    class="px-3 py-1.5 text-xs rounded-xl border border-zinc-800 hover:bg-zinc-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-clock-rotate-left"></i><span>Lịch sử</span>
+            </button>
+            <button onclick="newConversation()" title="Chat mới"
+                    class="px-3 py-1.5 text-xs rounded-xl border border-zinc-800 hover:bg-zinc-900 flex items-center gap-1.5">
+              <i class="fa-solid fa-plus"></i><span>Mới</span>
+            </button>
+          </div>
+        </div>
+        <div id="chat-history-panel" class="hidden glass rounded-2xl border border-zinc-800 p-3 mb-3 max-h-48 overflow-y-auto text-xs space-y-1"></div>
+
+        <div id="chat-window" class="glass rounded-3xl p-6 h-[520px] overflow-y-auto mb-4 space-y-4 border border-zinc-800">
+          <!-- Messages injected here -->
+        </div>
+
+        <div class="flex gap-3">
+          <input id="chat-input" type="text" placeholder="Hỏi Braind về bất cứ điều gì..."
+                 class="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-sm focus:outline-none focus:border-blue-500/50">
+          <button onclick="sendMessage()" class="px-8 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 font-medium flex items-center gap-2 transition-all">
+            <span>Gửi</span><i class="fa-solid fa-arrow-up"></i>
+          </button>
+        </div>
+        <div class="text-[11px] text-zinc-500 mt-2 ml-1">Lịch sử được lưu · Markdown render · Dẫn chứng hiện dưới câu trả lời.</div>
+      </div>
+    </div>
+
+    <!-- MEMORY VIEW -->
+    <div id="view-memory" class="view hidden">
+      <div class="flex items-end justify-between mb-6">
+        <div>
+          <div class="text-3xl font-display tracking-tight">Bộ nhớ Braind</div>
+          <div class="text-zinc-400">Đồ thị kiến thức liền mạch — mỗi nút là một nguồn, mỗi đường là một liên kết thật trong database.</div>
+        </div>
+        <button onclick="loadMemoryGraph()" class="px-4 py-2 text-sm rounded-xl border border-zinc-800 hover:bg-zinc-900 flex items-center gap-2">
+          <i class="fa-solid fa-sync"></i><span>Tải lại</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-12 gap-5">
+        <div class="col-span-12 lg:col-span-8">
+          <div class="glass rounded-3xl border border-zinc-800 overflow-hidden relative">
+            <div class="flex items-center justify-between px-5 pt-4 pb-2 gap-3 flex-wrap">
+              <div id="graph-legend" class="flex items-center gap-4 text-[11px] text-zinc-400 flex-wrap"></div>
+              <div id="graph-filter" class="flex items-center gap-2 flex-wrap"></div>
+            </div>
+            <canvas id="brain-canvas" class="w-full block cursor-grab active:cursor-grabbing" height="560"></canvas>
+            <div class="absolute bottom-3 left-5 text-[11px] text-zinc-600 select-none pointer-events-none">
+              Kéo để di chuyển • Lăn chuột để zoom • Bấm nút để xem chi tiết
+            </div>
+          </div>
+        </div>
+        <div class="col-span-12 lg:col-span-4 space-y-4">
+          <div class="glass rounded-3xl p-5 border border-zinc-800">
+            <div class="section-header mb-3">Thống kê</div>
+            <div id="memory-stats" class="space-y-3 text-sm"></div>
+          </div>
+          <div class="glass rounded-3xl p-5 border border-zinc-800">
+            <div id="node-detail" class="text-xs text-zinc-400">
+              <i class="fa-solid fa-circle-info text-zinc-600 mr-1"></i> Bấm vào một nút trên đồ thị để xem chi tiết liên kết.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INGEST VIEW -->
+    <div id="view-ingest" class="view hidden">
+      <div class="ingest-shell" id="ingest-shell">
+        <div class="ingest-grid">
+          <!-- LEFT: inputs -->
+          <div class="ingest-left">
+            <div class="mach-label">Bộ nạp kiến thức</div>
+            <div>
+              <div class="ingest-title">Ingest data into braind</div>
+              <div class="text-zinc-400 text-sm mt-1.5 max-w-lg">
+                Nạp văn bản hoặc file .md/.txt/.docx. Braind sẽ chunk, embed, trích từ khóa và liên kết với kiến thức hiện có.
+              </div>
+            </div>
+
+            <div id="ingest-dropzone" class="ingest-drop" onclick="document.getElementById('file-input').click()">
+              <div class="drop-icon-ring">
+                <i class="fa-solid fa-cloud-arrow-up text-cyan-300 text-2xl"></i>
+              </div>
+              <div class="font-medium text-zinc-100">Kéo thả file vào đây hoặc click để chọn</div>
+              <div class="text-xs text-zinc-500 mt-1">Hỗ trợ .pdf, .docx, .pptx, .xlsx, .odt, .epub, .md, .txt, .csv, .json, .xml, .yaml và mã nguồn</div>
+            </div>
+            <input type="file" id="file-input" class="hidden" onchange="handleFileUpload(this)">
+
+            <div class="relative">
+              <div class="text-[10px] tracking-widest uppercase text-zinc-500 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-terminal text-[10px]"></i> Nội dung trực tiếp
+              </div>
+              <textarea id="ingest-text" placeholder="Dán văn bản, ghi chú, hoặc đoạn tài liệu cần nạp..."
+                        class="ingest-area" rows="4"></textarea>
+              <div class="flex gap-3 mt-3">
+                <input id="ingest-title" type="text" placeholder="Tiêu đề (tùy chọn)" class="ingest-input flex-1">
+                <button id="ingest-btn" onclick="ingestText()" class="btn-ingest loading">
+                  <span class="shine"></span>
+                  <i class="fa-solid fa-bolt"></i>
+                  <span>Nạp vào Brain</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="relative pt-2 border-t border-zinc-800/60">
+              <div class="text-[10px] tracking-widest uppercase text-zinc-500 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-sitemap text-[10px]"></i> Học cả một website
+              </div>
+              <div class="text-xs text-zinc-500 mb-3">
+                Nhập một URL. Braind sẽ tìm mọi liên kết trong trang, đi vào từng trang để đọc,
+                học và nạp — chỉ trong cùng website, tối đa 10 tầng.
+              </div>
+              <input id="crawl-url" type="url" placeholder="https://example.com/docs" class="ingest-input w-full">
+              <div class="flex gap-3 mt-3">
+                <input id="crawl-topic" type="text" placeholder="Chủ đề để lọc (tùy chọn — để trống thì học tất cả)" class="ingest-input flex-1">
+                <input id="crawl-max-pages" type="number" min="1" max="300" value="300" title="Số trang tối đa" class="ingest-input" style="width:6.5rem">
+              </div>
+              <div class="flex gap-3 mt-3">
+                <button id="crawl-btn" onclick="startSiteCrawl()" class="btn-ingest">
+                  <span class="shine"></span>
+                  <i class="fa-solid fa-spider"></i>
+                  <span>Duyệt &amp; học website</span>
+                </button>
+                <button id="crawl-stop" onclick="stopSiteCrawl()" class="btn-ingest hidden" style="background:#3f1d1d">
+                  <i class="fa-solid fa-stop"></i>
+                  <span>Dừng</span>
+                </button>
+              </div>
+              <div id="crawl-progress" class="hidden mt-3 rounded-xl border border-zinc-800 bg-black/30 p-3">
+                <div class="flex items-center justify-between text-xs">
+                  <span id="crawl-stage" class="text-cyan-300">Đang chuẩn bị…</span>
+                  <span id="crawl-counts" class="font-mono text-zinc-400">0 trang</span>
+                </div>
+                <div id="crawl-log" class="mt-2 max-h-48 overflow-y-auto text-[11px] font-mono space-y-0.5"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: neural visualisation -->
+          <div class="ingest-right">
+            <canvas id="neural-canvas"></canvas>
+            <div class="neural-overlay">
+              <div class="neural-hud">
+                <div><span class="blink"></span>NEURAL INGESTOR ONLINE</div>
+                <div id="neural-state">IDLE</div>
+              </div>
+              <div class="neural-status">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="title" id="neural-status-title">Sẵn sàng</div>
+                    <div class="sub" id="neural-status-sub">Đợi dữ liệu đầu vào</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-[10px] text-zinc-500 uppercase tracking-wider mb-0.5">Đã nạp hôm nay</div>
+                    <div class="text-lg font-display text-cyan-300" id="neural-today">—</div>
+                  </div>
+                </div>
+
+                <div class="pipeline" id="neural-pipeline">
+                  <div class="pipe-step" data-step="0">
+                    <div class="ico"><i class="fa-solid fa-file-import"></i></div>
+                    <div class="lbl">Nhận</div>
+                  </div>
+                  <div class="pipe-step" data-step="1">
+                    <div class="ico"><i class="fa-solid fa-scissors"></i></div>
+                    <div class="lbl">Chunk</div>
+                  </div>
+                  <div class="pipe-step" data-step="2">
+                    <div class="ico"><i class="fa-solid fa-vector-square"></i></div>
+                    <div class="lbl">Embed</div>
+                  </div>
+                  <div class="pipe-step" data-step="3">
+                    <div class="ico"><i class="fa-solid fa-tags"></i></div>
+                    <div class="lbl">Từ khóa</div>
+                  </div>
+                  <div class="pipe-step" data-step="4">
+                    <div class="ico"><i class="fa-solid fa-project-diagram"></i></div>
+                    <div class="lbl">Liên kết</div>
+                  </div>
+                </div>
+
+                <div class="metric-bar"><i id="neural-progress" style="width: 0%"></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOG + RESULT -->
+        <div class="ingest-log" id="ingest-log" style="display:none">
+          <div class="ingest-log-head">
+            <span><i class="fa-solid fa-microchip mr-1"></i> INGEST LOG</span>
+            <button class="text-zinc-400 hover:text-zinc-200" onclick="clearIngestLog()">Clear</button>
+          </div>
+          <div class="ingest-log-body" id="ingest-log-body"></div>
+        </div>
+
+        <div id="ingest-result" class="hidden" style="margin:18px 20px 20px"></div>
+      </div>
+    </div>
+
+    <!-- WRITER VIEW -->
+    <div id="view-writer" class="view hidden">
+      <div class="max-w-[1500px]">
+        <div class="mb-6">
+          <div class="text-3xl font-display tracking-tight">Viết nội dung từ Brain</div>
+          <div class="text-zinc-400">Tạo blog, social, email, quảng cáo — Braind dùng kiến thức đã nạp.</div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          <section class="lg:col-span-3 glass rounded-3xl p-5 border border-zinc-800 lg:sticky lg:top-4">
+            <div class="text-sm font-medium mb-4">Thiết lập bài viết</div>
+            <div class="space-y-3">
+              <div><div class="text-xs text-zinc-500 mb-1.5">Loại nội dung</div><select id="writer-type" class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-3 py-2.5 text-sm"></select></div>
+              <div><div class="text-xs text-zinc-500 mb-1.5">Gợi ý tiêu đề / chủ đề</div><input id="writer-topic" type="text" class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-3 py-2.5 text-sm" placeholder="Gợi ý để Braind tạo tiêu đề..."></div>
+              <div><div class="text-xs text-zinc-500 mb-1.5">Từ khóa</div><input id="writer-keywords" type="text" class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-3 py-2.5 text-sm" placeholder="AI, RAG, vLLM"></div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><div class="text-xs text-zinc-500 mb-1.5">Giọng điệu</div><select id="writer-tone" class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-3 py-2.5 text-sm"></select></div>
+                <div><div class="text-xs text-zinc-500 mb-1.5">Đối tượng</div><select id="writer-audience" class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-3 py-2.5 text-sm"></select></div>
+                <div><div class="text-xs text-zinc-500 mb-1.5">Số chữ</div><input id="writer-wordcount" type="number" min="100" max="3000" step="50" value="600" class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-3 py-2.5 text-sm" placeholder="600"></div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><div class="text-xs text-zinc-500 mb-1.5">Ngôn ngữ</div><select id="writer-language" class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-3 py-2.5 text-sm"></select></div>
+                <div><div class="text-xs text-zinc-500 mb-1.5">Số bài viết</div><select id="writer-variants" class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-3 py-2.5 text-sm"></select></div>
+              </div>
+              <div class="pt-2 space-y-2">
+                <button id="writer-generate-btn" onclick="generateContent()" class="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"><i class="fa-solid fa-magic"></i><span>Tạo nội dung</span></button>
+                <button onclick="checkSimilarity()" class="w-full py-2.5 rounded-2xl border border-zinc-700 hover:bg-zinc-900 flex items-center justify-center gap-2 text-sm"><i class="fa-solid fa-database"></i><span>Trùng nội bộ</span></button>
+              </div>
+            </div>
+          </section>
+          <section class="lg:col-span-6 min-w-0">
+            <div id="writer-warnings" class="hidden mb-4"></div>
+            <div id="writer-result" class="hidden space-y-6"></div>
+            <div id="similarity-panel" class="hidden mt-4"></div>
+            <div id="writer-empty" class="glass rounded-3xl border border-zinc-800 p-10 text-center text-zinc-500"><i class="fa-regular fa-file-lines text-3xl mb-3"></i><div>Bài viết sẽ hiển thị tại đây</div></div>
+          </section>
+          <aside class="lg:col-span-3 glass rounded-3xl p-5 border border-zinc-800 lg:sticky lg:top-4 max-h-[calc(100vh-110px)] overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between mb-4"><div class="text-sm font-medium">Lịch sử bài viết</div><button onclick="loadWriterHistory()" class="text-zinc-500 hover:text-zinc-200" title="Tải lại"><i class="fa-solid fa-rotate"></i></button></div>
+            <div id="writer-history-list" class="flex-1 overflow-y-auto space-y-2"><div class="text-xs text-zinc-500">Đang tải lịch sử...</div></div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEARN VIEW -->
+    <div id="view-learn" class="view hidden">
+      <div class="max-w-[1400px]">
+        <div class="mb-6 flex items-end justify-between">
+          <div>
+            <div class="text-3xl font-display tracking-tight">Tự học sâu theo chủ đề</div>
+            <div class="text-zinc-400">Braind sẽ tự sinh truy vấn, tìm kiếm, phân tích SEO và nạp tri thức vào brain.</div>
+          </div>
+          <div id="learn-status-badge" class="text-xs font-mono uppercase tracking-wider px-4 py-2 rounded-full border text-zinc-500 border-zinc-800">Sẵn sàng</div>
+        </div>
+
+        <div class="learn-shell" id="learn-shell">
+          <div class="learn-spark"></div>
+          <div class="learn-grid">
+            <div class="learn-left">
+              <div class="learn-hud">
+                <span>Máy tự học</span>
+                <span class="learn-state idle" id="learn-state-label">⏻ IDLE</span>
+              </div>
+              <div class="learn-excerpt" id="learn-excerpt">Nhập chủ đề và bắt đầu — Braind sẽ tự động crawl, phân tích, và nạp kiến thức.</div>
+
+              <div class="learn-pipeline" id="learn-pipeline">
+                <div class="pipe-step" data-i="0"><span class="ico">🔍</span><span class="lbl">TẠO TRUY VẤN</span></div>
+                <div class="pipe-step" data-i="1"><span class="ico">🌐</span><span class="lbl">TÌM KIẾM</span></div>
+                <div class="pipe-step" data-i="2"><span class="ico">📋</span><span class="lbl">LỊCH SỬ</span></div>
+                <div class="pipe-step" data-i="3"><span class="ico">⬇️</span><span class="lbl">TẢI TRANG</span></div>
+                <div class="pipe-step" data-i="4"><span class="ico">📊</span><span class="lbl">PHÂN TÍCH SEO</span></div>
+                <div class="pipe-step" data-i="5"><span class="ico">🔗</span><span class="lbl">CHỌN LINK</span></div>
+                <div class="pipe-step" data-i="6"><span class="ico">🧠</span><span class="lbl">NẠP TRI THỨC</span></div>
+              </div>
+
+              <div class="learn-metrics" id="learn-metrics">
+                <div class="learn-metric"><div class="k">Đã quét</div><div class="v" id="m-pages">0</div></div>
+                <div class="learn-metric"><div class="k">Đã nạp</div><div class="v green" id="m-ingested">0</div></div>
+                <div class="learn-metric"><div class="k">Trùng</div><div class="v amber" id="m-duplicates">0</div></div>
+                <div class="learn-metric"><div class="k">Lỗi</div><div class="v red" id="m-errors">0</div></div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4 mt-2">
+                <div class="learn-input-wrap">
+                  <label>Chủ đề</label>
+                  <input id="deep-topic" type="text" class="w-full bg-zinc-900/80 border border-zinc-800 rounded-2xl px-4 py-3 text-sm" placeholder="Tối ưu RAG pipeline">
+                </div>
+                <div class="learn-input-wrap">
+                  <label>Từ khóa (phẩy)</label>
+                  <input id="deep-keywords" type="text" class="w-full bg-zinc-900/80 border border-zinc-800 rounded-2xl px-4 py-3 text-sm" placeholder="pgvector, embedding">
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="learn-input-wrap">
+                  <label>Độ sâu</label>
+                  <select id="deep-depth" class="w-full bg-zinc-900/80 border border-zinc-800 rounded-2xl px-3 py-2.5 text-sm">
+                    <option value="1">1 — Cơ bản</option>
+                    <option value="2" selected>2 — Mở rộng</option>
+                    <option value="3">3 — Sâu</option>
+                  </select>
+                </div>
+                <div class="learn-input-wrap">
+                  <label>Kết quả / tầng</label>
+                  <select id="deep-items" class="w-full bg-zinc-900/80 border border-zinc-800 rounded-2xl px-3 py-2.5 text-sm">
+                    <option value="2">2</option>
+                    <option value="3" selected>3</option>
+                    <option value="5">5</option>
+                  </select>
+                </div>
+                <div class="flex items-end">
+                  <button id="btn-deep-learn" onclick="startDeepLearn()" class="btn-learn w-full justify-center">
+                    <i class="fa-solid fa-brain"></i><span>Bắt đầu tự học</span><span class="shine"></span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="learn-log">
+                <div class="learn-log-head">
+                  <span><i class="fa-solid fa-terminal mr-2"></i>Console log</span>
+                  <button onclick="clearLearnLog()" class="text-[10px] text-zinc-600 hover:text-zinc-400 transition">Xoá</button>
+                </div>
+                <div class="learn-log-body" id="learn-log-body"></div>
+              </div>
+            </div>
+
+            <div class="learn-right">
+              <div class="flex items-center justify-between mb-3">
+                <span class="section-header">Trang đã quét</span>
+                <span class="text-xs text-zinc-600" id="learn-page-count">0</span>
+              </div>
+              <div class="learn-pages-wrap">
+                <div class="tblhead"><span>#</span><span>URL</span><span>Tiêu đề</span><span>Depth</span><span>Status</span></div>
+                <div class="learn-pages" id="learn-pages"></div>
+              </div>
+
+              <div class="mt-4">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="section-header">Lịch sử tự học</span>
+                  <button onclick="loadLearnHistory()" class="text-[10px] text-zinc-600 hover:text-zinc-400 transition"><i class="fa-solid fa-rotate"></i></button>
+                </div>
+                <div id="learn-history" class="space-y-2 max-h-[280px] overflow-y-auto pr-1"></div>
+                <div id="learn-history-detail" class="hidden mt-3"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-[100] space-y-2"></div>
+
+  <script src="/static/main/js/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+.venv/
+.venv-*/
+venv/
+env/
+
+# Python caches and build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Runtime data and logs
+logs/
+*.log
+*.out
+*.err
+data/
+models/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+
+# Local tool settings
+.claude/
+
+# Runtime-generated Obsidian export — rebuilt from the database via
+# POST /api/ingest/obsidian-export into vault/<obsidian_export_dirname>.
+vault/braind/

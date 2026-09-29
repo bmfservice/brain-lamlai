@@ -1,0 +1,29 @@
+[Unit]
+Description=BILL vLLM embedding server (Arctic Embed, GPU from .env)
+Documentation=file:///mnt/d/AI/braind/docs/operations.md
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/d/AI/braind
+ExecStart=/mnt/d/AI/braind/start_vllm.sh embed
+
+# vLLM JIT-compiles flashinfer kernels and loads a multi-GB model; give it room
+# before systemd would consider the start hung.
+TimeoutStartSec=900
+# Stop is graceful but vLLM can take a while to release CUDA; don't wait forever.
+TimeoutStopSec=30
+
+Restart=on-failure
+RestartSec=5
+
+# Reap the whole cgroup on stop: vLLM forks EngineCore/worker subprocesses that
+# would otherwise survive and keep holding VRAM, breaking the next start.
+KillMode=control-group
+
+# NOTE: no LD_LIBRARY_PATH is needed. WSL writes /etc/ld.so.conf.d/ld.wsl.conf
+# containing /usr/lib/wsl/lib, so libcuda/libnvidia-ml resolve through the
+# ldconfig cache even in systemd's clean environment. start_vllm.sh sets its own
+# PATH, CUDA_HOME and FLASHINFER_EXTRA_CUDAFLAGS.
+
+[Install]
+WantedBy=braind-vllm.target

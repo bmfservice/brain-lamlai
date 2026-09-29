@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head><title>Giai đoạn 2 — Stealth Web Layer Verification</title>
+<meta name="description" content="Verification fixture for the readability extractor.">
+</head>
+<body>
+<nav><a href="/">Home</a> <a href="/about">About</a> <a href="/login">Login</a></nav>
+<article>
+<h1>Verification page heading</h1>
+<p>This verification paragraph exists to give the readability extractor enough
+prose to return a confident article body. It contains multiple sentences with
+regular punctuation so that the prose ratio measured by the quality gate stays
+well above the rejection threshold used at ingest time.</p>
+<p>A second paragraph provides additional sentence structure. Retrieval quality
+depends on extraction quality, and extraction quality depends on the density
+algorithm choosing the article container over the navigation chrome that
+surrounds it on every modern web page published today.</p>
+<h2>Secondary section</h2>
+<p>The second section confirms that headings inside the article container are
+preserved by the extractor rather than dropped with the page furniture.</p>
+</article>
+<footer>Copyright notice that must never appear in extracted text.</footer>
+</body>
+</html>

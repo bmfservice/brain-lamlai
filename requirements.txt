@@ -1,0 +1,41 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+sqlalchemy[asyncio]>=2.0.36
+pgvector>=0.3.6
+asyncpg>=0.30.0
+psycopg2-binary>=2.9.10
+alembic>=1.14.0
+httpx>=0.28.0
+python-frontmatter>=1.1.0
+markdown-it-py>=3.0.0
+python-multipart>=0.0.17
+apscheduler>=3.10.4
+structlog>=24.4.0
+sse-starlette>=2.2.0
+python-dotenv>=1.0.0
+tiktoken>=0.8.0
+feedparser>=6.0.11
+beautifulsoup4>=4.12.3
+lxml>=5.3.0
+# Document extraction for POST /api/ingest/file. .docx/.pptx/.odt/.epub are
+# read with the stdlib zipfile + XML path and need no dependency.
+pypdf>=6.0.0
+openpyxl>=3.1.5
+# Ingest V2 dependencies for enhanced PDF extraction
+pdfplumber>=0.11.0
+PyMuPDF>=1.24.0
+# Stealth web layer (Giai đoạn 2): curl_cffi impersonates real Chrome TLS
+# fingerprints for anti-bot targets; trafilatura is the readability-grade
+# article extractor. Windows wheels verified (cp310-abi3 / pure-py).
+curl-cffi==0.16.3
+trafilatura==2.2.0
+# Giai đoạn 5 — consolidated classifier (distills LLM relation decisions into
+# a small HistGradientBoosting model so familiar cases skip the LLM entirely).
+# Windows cp312 wheel verified; inference measured at ~6.6 ms/batch-12.
+scikit-learn==1.9.0
+# NOTE: vLLM is intentionally NOT here. It only ships manylinux wheels (cannot
+# install on Windows) and the app never imports it — core/vllm.py is a pure
+# HTTP client. The inference servers install it via requirements-vllm.txt
+# inside WSL.
